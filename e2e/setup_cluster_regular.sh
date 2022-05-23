@@ -15,8 +15,6 @@ if [ "${running}" != 'true' ]; then
   $OCI_BIN run -d --restart=always -p "${reg_port}:5000" --name "${reg_name}" registry:2
 fi
 
-# TODO $OCI_BIN build -t localhost:5000/multus-networkpolicy-iptables:e2e -f ../Dockerfile ..
-$OCI_BIN push localhost:5000/multus-networkpolicy-iptables:e2e
 
 reg_host="${reg_name}"
 if [ "${kind_network}" = "bridge" ]; then
@@ -25,7 +23,7 @@ fi
 echo "Registry Host: ${reg_host}"
 
 # deploy cluster with kind
-cat <<EOF | kind create cluster --config=-
+cat <<EOF | kind create cluster --name=regular --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
@@ -47,7 +45,7 @@ networking:
   podSubnet: 10.244.0.0/16
 EOF
 
-cat <<EOF | kubectl apply -f -
+cat <<EOF | kubectl --context kind-regular apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -77,22 +75,10 @@ kind export kubeconfig
 sudo env PATH=${PATH} koko -p "$worker1_pid,eth1" -p "$worker2_pid,eth1"
 sleep 1
 
-kubectl apply -f https://docs.projectcalico.org/v3.23/manifests/calico.yaml
-kubectl -n kube-system set env daemonset/calico-node FELIX_IGNORELOOSERPF=true
-kubectl -n kube-system set env daemonset/calico-node FELIX_XDPENABLED=false
+kubectl --context kind-regular apply -f https://docs.projectcalico.org/v3.23/manifests/calico.yaml
+kubectl --context kind-regular -n kube-system set env daemonset/calico-node FELIX_IGNORELOOSERPF=true
+kubectl --context kind-regular -n kube-system set env daemonset/calico-node FELIX_XDPENABLED=false
 
-kubectl -n kube-system wait --for=condition=available deploy/coredns --timeout=300s
-#kubectl create -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
-
+kubectl --context kind-regular -n kube-system wait --for=condition=available deploy/coredns --timeout=300s
 
 
-kubectl create -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.8/images/multus-daemonset.yml
-kubectl -n kube-system wait --for=condition=ready -l name=multus pod --timeout=600s
-kubectl create -f cni-install.yml
-kubectl -n kube-system wait --for=condition=ready -l name=cni-plugins pod --timeout=300s
-
-
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multi-networkpolicy/master/scheme.yml
-kubectl apply -f multi-network-policy-iptables-e2e.yml
-
-kubectl -n kube-system wait --for=condition=ready -l name=multi-networkpolicy pod --timeout=300s

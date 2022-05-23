@@ -1,21 +1,4 @@
----
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: macvlan1-config
-spec: 
-  config: '{
-            "cniVersion": "0.3.1",
-            "plugins": [
-                {
-                    "type": "macvlan",
-                    "capabilities": { "ips": true },
-                    "master": "eth1",
-                    "mode": "bridge",
-                    "ipam":{"type":"host-local","subnet":"2.2.2.0/24","rangeStart":"2.2.2.8","rangeEnd":"2.2.2.67","routes":[{"dst":"0.0.0.0/0"}]}
-                }]
-        }'
----
+
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -27,8 +10,6 @@ kind: Pod
 metadata:
   name: pod-a
   namespace: test-stacked
-  annotations:
-    k8s.v1.cni.cncf.io/networks: default/macvlan1-config
   labels:
     app: pod-a
 spec:
@@ -56,8 +37,6 @@ kind: Pod
 metadata:
   name: pod-b
   namespace: test-stacked
-  annotations:
-    k8s.v1.cni.cncf.io/networks: default/macvlan1-config
   labels:
     app: pod-b
 spec:
@@ -76,8 +55,6 @@ kind: Pod
 metadata:
   name: pod-c
   namespace: test-stacked
-  annotations:
-    k8s.v1.cni.cncf.io/networks: default/macvlan1-config
   labels:
     app: pod-c
 spec:
@@ -96,8 +73,6 @@ kind: Pod
 metadata:
   name: pod-d
   namespace: test-stacked
-  annotations:
-    k8s.v1.cni.cncf.io/networks: default/macvlan1-config
   labels:
     app: pod-d
 spec:
@@ -111,25 +86,6 @@ spec:
       limits: { memory: 128Mi, cpu: "1" }
       requests: { memory: 64Mi, cpu: "0.2"}
 
---- # MultiNetworkPolicies
-apiVersion: k8s.cni.cncf.io/v1beta1
-kind: MultiNetworkPolicy
-metadata:
-  name: test-multinetwork-policy-stacked-1
-  namespace: test-stacked
-  annotations:
-    k8s.v1.cni.cncf.io/policy-for: default/macvlan1-config
-spec:
-  podSelector:
-    matchLabels:
-      app: pod-a
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: pod-b
 ---
 apiVersion: k8s.cni.cncf.io/v1beta1
 kind: MultiNetworkPolicy
