@@ -85,7 +85,6 @@ func (c *NetworkPolicyConfig) Run(stopCh <-chan struct{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicySynced()")
 		c.eventHandlers[i].OnPolicySynced()
 	}
 }
@@ -98,7 +97,6 @@ func (c *NetworkPolicyConfig) handleAddPolicy(obj interface{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicyAdd")
 		c.eventHandlers[i].OnPolicyAdd(policy)
 	}
 }
@@ -115,7 +113,6 @@ func (c *NetworkPolicyConfig) handleUpdatePolicy(oldObj, newObj interface{}) {
 		return
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicyUpdate")
 		c.eventHandlers[i].OnPolicyUpdate(oldPolicy, policy)
 	}
 }
@@ -133,7 +130,6 @@ func (c *NetworkPolicyConfig) handleDeletePolicy(obj interface{}) {
 		}
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicyDelete")
 		c.eventHandlers[i].OnPolicyDelete(policy)
 	}
 }

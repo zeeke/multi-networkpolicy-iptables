@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -38,8 +39,10 @@ import (
 	netdefinformerv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/informers/externalversions"
 
 	v1 "k8s.io/api/core/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -298,7 +301,7 @@ func (s *Server) OnPodAdd(pod *v1.Pod) {
 
 // OnPodUpdate ...
 func (s *Server) OnPodUpdate(oldPod, pod *v1.Pod) {
-	klog.V(4).Infof("OnPodUpdate")
+	klog.V(4).Infof("OnPodUpdate %s -> %s", namespacedName(oldPod), namespacedName(pod))
 	if s.podChanges.Update(oldPod, pod) && s.podSynced {
 		s.Sync()
 	}
@@ -338,7 +341,7 @@ func (s *Server) OnPolicyAdd(policy *multiv1beta1.MultiNetworkPolicy) {
 
 // OnPolicyUpdate ...
 func (s *Server) OnPolicyUpdate(oldPolicy, policy *multiv1beta1.MultiNetworkPolicy) {
-	klog.V(4).Infof("OnPolicyUpdate")
+	klog.V(4).Infof("OnPolicyUpdate %s -> %s", namespacedName(oldPolicy), namespacedName(policy))
 	if s.policyChanges.Update(oldPolicy, policy) && s.isInitialized() {
 		s.Sync()
 	}
@@ -371,7 +374,7 @@ func (s *Server) OnNetDefAdd(net *netdefv1.NetworkAttachmentDefinition) {
 
 // OnNetDefUpdate ...
 func (s *Server) OnNetDefUpdate(oldNet, net *netdefv1.NetworkAttachmentDefinition) {
-	klog.V(4).Infof("OnNetDefUpdate")
+	klog.V(4).Infof("OnNetDefUpdate %s -> %s", namespacedName(oldNet), namespacedName(net))
 	if s.netdefChanges.Update(oldNet, net) && s.isInitialized() {
 		s.Sync()
 	}
@@ -404,7 +407,7 @@ func (s *Server) OnNamespaceAdd(ns *v1.Namespace) {
 
 // OnNamespaceUpdate ...
 func (s *Server) OnNamespaceUpdate(oldNamespace, ns *v1.Namespace) {
-	klog.V(4).Infof("OnNamespaceUpdate")
+	klog.V(4).Infof("OnNamespaceUpdate: %s -> %s", namespacedName(oldNamespace), namespacedName(ns))
 	if s.nsChanges.Update(oldNamespace, ns) && s.isInitialized() {
 		s.Sync()
 	}
@@ -612,4 +615,17 @@ func (s *Server) generatePolicyRules(pod *v1.Pod, podInfo *controllers.PodInfo) 
 	}
 
 	return nil
+}
+
+func namespacedName(obj runtime.Object) string {
+	if obj == nil || (reflect.ValueOf(obj).Kind() == reflect.Ptr && reflect.ValueOf(obj).IsNil()) {
+		return "<nil>"
+	}
+
+	a, err := apimeta.Accessor(obj)
+	if err != nil {
+		return "<err>"
+	}
+
+	return a.GetNamespace() + "/" + a.GetName()
 }

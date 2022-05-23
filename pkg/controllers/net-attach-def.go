@@ -88,7 +88,6 @@ func (c *NetDefConfig) Run(stopCh <-chan struct{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicySynced()")
 		c.eventHandlers[i].OnNetDefSynced()
 	}
 }
@@ -101,7 +100,6 @@ func (c *NetDefConfig) handleAddNetDef(obj interface{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicyAdd")
 		c.eventHandlers[i].OnNetDefAdd(netdef)
 	}
 }
@@ -118,7 +116,6 @@ func (c *NetDefConfig) handleUpdateNetDef(oldObj, newObj interface{}) {
 		return
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnPolicyUpdate")
 		c.eventHandlers[i].OnNetDefUpdate(oldNetDef, netdef)
 	}
 }
@@ -136,7 +133,6 @@ func (c *NetDefConfig) handleDeleteNetDef(obj interface{}) {
 		}
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnNetDefDelete")
 		c.eventHandlers[i].OnNetDefDelete(netdef)
 	}
 }

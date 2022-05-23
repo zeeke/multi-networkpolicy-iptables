@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -83,7 +83,6 @@ func (c *NamespaceConfig) Run(stopCh <-chan struct{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnNamespaceSynced()")
 		c.eventHandlers[i].OnNamespaceSynced()
 	}
 }
@@ -96,7 +95,6 @@ func (c *NamespaceConfig) handleAddNamespace(obj interface{}) {
 	}
 
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnNamespaceAdd")
 		c.eventHandlers[i].OnNamespaceAdd(ns)
 	}
 }
@@ -113,7 +111,6 @@ func (c *NamespaceConfig) handleUpdateNamespace(oldObj, newObj interface{}) {
 		return
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnNamespaceUpdate")
 		c.eventHandlers[i].OnNamespaceUpdate(oldNamespace, ns)
 	}
 }
@@ -131,7 +128,6 @@ func (c *NamespaceConfig) handleDeleteNamespace(obj interface{}) {
 		}
 	}
 	for i := range c.eventHandlers {
-		klog.V(4).Infof("Calling handler.OnNamespaceDelete")
 		c.eventHandlers[i].OnNamespaceDelete(ns)
 	}
 }
