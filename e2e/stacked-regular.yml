@@ -2,14 +2,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-    name: test-stacked
+    name: test-stacked-regular
 
 --- # Pods
 apiVersion: v1
 kind: Pod
 metadata:
   name: pod-a
-  namespace: test-stacked
+  namespace: test-stacked-regular
   labels:
     app: pod-a
 spec:
@@ -36,7 +36,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: pod-b
-  namespace: test-stacked
+  namespace: test-stacked-regular
   labels:
     app: pod-b
 spec:
@@ -54,7 +54,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: pod-c
-  namespace: test-stacked
+  namespace: test-stacked-regular
   labels:
     app: pod-c
 spec:
@@ -72,7 +72,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: pod-d
-  namespace: test-stacked
+  namespace: test-stacked-regular
   labels:
     app: pod-d
 spec:
@@ -91,7 +91,7 @@ apiVersion: k8s.cni.cncf.io/v1beta1
 kind: MultiNetworkPolicy
 metadata:
   name: test-multinetwork-policy-stacked-2
-  namespace: test-stacked
+  namespace: test-stacked-regular
   annotations:
     k8s.v1.cni.cncf.io/policy-for: default/macvlan1-config
 spec:
@@ -111,7 +111,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: test-network-policy-stacked-1
-  namespace: test-stacked
+  namespace: test-stacked-regular
 spec:
   podSelector:
     matchLabels:
@@ -128,7 +128,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: test-network-policy-stacked-2
-  namespace: test-stacked
+  namespace: test-stacked-regular
 spec:
   podSelector:
     matchLabels:

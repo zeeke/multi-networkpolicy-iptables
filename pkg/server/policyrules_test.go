@@ -781,6 +781,76 @@ COMMIT
 		Expect(buf.filterRules.Bytes()).To(Equal(finalizedRules))
 	})
 
+	It("multiple port/protocol pairs values", func() {
+		port8888 := intstr.FromInt(8888)
+		port9999 := intstr.FromInt(9999)
+		//protoTCP := v1.ProtocolTCP
+		protoUDP := v1.ProtocolUDP
+
+		policies1 := &multiv1beta1.MultiNetworkPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "policies1",
+				Namespace: "testns1",
+			},
+			Spec: multiv1beta1.MultiNetworkPolicySpec{
+				Ingress: []multiv1beta1.MultiNetworkPolicyIngressRule{
+					{
+						Ports: []multiv1beta1.MultiNetworkPolicyPort{
+							{
+								Port: &port8888,
+								//Protocol: &protoTCP,
+							},
+							{
+								Port:     &port9999,
+								Protocol: &protoUDP,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		ipt := fakeiptables.NewFake()
+		Expect(ipt).NotTo(BeNil())
+		buf := newIptableBuffer()
+		Expect(buf).NotTo(BeNil())
+		buf.Init(ipt)
+
+		s := NewFakeServer("samplehost")
+		Expect(s).NotTo(BeNil())
+
+		AddNamespace(s, "testns1")
+
+		Expect(s.netdefChanges.Update(
+			nil,
+			NewNetDef("testns1", "net-attach1", NewCNIConfig("testCNI", "multi"))),
+		).To(BeTrue())
+		Expect(s.netdefChanges.GetPluginType(types.NamespacedName{Namespace: "testns1", Name: "net-attach1"})).
+			To(Equal("multi"))
+
+		pod1 := NewFakePodWithNetAnnotation(
+			"testns1",
+			"testpod1",
+			"net-attach1",
+			NewFakeNetworkStatus("testns1", "net-attach1", "192.168.1.1", "10.1.1.1"),
+			nil)
+		AddPod(s, pod1)
+		podInfo1, err := s.podMap.GetPodInfo(pod1)
+		Expect(err).To(BeNil())
+
+		buf.renderIngress(s, podInfo1, 0, policies1, []string{"testns1/net-attach1"})
+
+		fmt.Println(buf.ingressPorts.String())
+
+		portRules := `xxx -A MULTI-0-INGRESS-0-PORTS -i net1 -m tcp -p tcp --dport 8888 -j MARK --set-xmark 0x10000/0x10000
+-A MULTI-0-INGRESS-0-PORTS -i net1 -m udp -p udp --dport 9999 -j MARK --set-xmark 0x10000/0x10000
+`
+
+		buf.FinalizeRules()
+		fmt.Println(buf.filterRules.String())
+		Expect(buf.ingressPorts.String()).To(Equal(portRules))
+	})
+
 	It("default values", func() {
 		port := intstr.FromInt(8888)
 		policies1 := &multiv1beta1.MultiNetworkPolicy{
