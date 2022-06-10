@@ -44,7 +44,7 @@ nodes:
   - role: worker
 networking:
   disableDefaultCNI: true
-  podSubnet: 10.244.0.0/16
+  ipFamily: dual
 EOF
 
 cat <<EOF | kubectl apply -f -
