@@ -502,9 +502,22 @@ func (s *Server) backupIptablesRules(pod *v1.Pod, suffix string) error {
 	// store iptable result to file
 	//XXX: need error handling? (see kube-proxy)
 	err = s.ip4Tables.SaveInto(utiliptables.TableMangle, &buffer)
+	if err != nil {
+		klog.Errorf("can't save MANGLE iptable. error[%v] buffer[%s]", err, buffer.String())
+	}
 	err = s.ip4Tables.SaveInto(utiliptables.TableFilter, &buffer)
+	if err != nil {
+		klog.Errorf("can't save FILTER iptable. error[%v] buffer[%s]", err, buffer.String())
+	}
 	err = s.ip4Tables.SaveInto(utiliptables.TableNAT, &buffer)
+	if err != nil {
+		klog.Errorf("can't save NAT iptable. error[%v] buffer[%s]", err, buffer.String())
+	}
+
 	_, err = buffer.WriteTo(file)
+	if err != nil {
+		klog.Errorf("can't write to file[%s] error[%v] buffer[%s]", file, err, buffer.String())
+	}
 
 	return err
 }
