@@ -47,7 +47,7 @@ var _ = BeforeSuite(func() {
 	m.CreateNamespace(cs.CoreV1Interface, nsZ.Name)
 
 	By("Creating NetworkAttachDefinition")
-	ipam := `{"type": "host-local","ranges": [ [{"subnet": "2.2.2.0/24"}] ]}`
+	ipam := `{"type": "host-local","ranges": [ [{"subnet": "3ffe:ffff:0:01ff::/64"}], [{"subnet": "2.2.2.0/24"}] ]}`
 	networkAttachDef := m.DefineMacvlanNetAttachDef(DefaultNamespace, TestsNetworkName, ipam)
 	m.CreateNetAttachDef(cs.K8sCniCncfIoV1Interface, networkAttachDef)
 
@@ -451,6 +451,41 @@ var _ = Describe("[multinetworkpolicy]", func() {
 			eventually30s(nsX.podB).ShouldNot(Reach(nsX.podA, OnPort(Port6666), ViaTCP))
 		})
 	})
+
+	Context("IPv6", func() {
+
+		It("ALLOW traffic to nsX_podA only from nsX_podB", func() {
+
+			m.MakeMultiNetworkPolicy(TestNetwork,
+				m.WithPodSelector(metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"pod": "a",
+					},
+				}),
+				m.WithIngressRule(multinetpolicyv1.MultiNetworkPolicyIngressRule{
+					From: []multinetpolicyv1.MultiNetworkPolicyPeer{{
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"pod": "b",
+							},
+						},
+					}},
+				}),
+				m.CreateInNamespace(cs.K8sCniCncfIoV1beta1Interface, nsX.Name),
+			)
+
+			// IPv4
+			eventually30s(nsX.podB).Should(Reach(nsX.podA, ViaIPv4))
+			eventually30s(nsX.podC).ShouldNot(Reach(nsX.podA, ViaIPv4))
+			eventually30s(nsX.podC).Should(Reach(nsX.podB, ViaIPv4))
+
+			// IPv6
+			eventually30s(nsX.podB).Should(Reach(nsX.podA, ViaIPv6))
+			eventually30s(nsX.podC).ShouldNot(Reach(nsX.podA, ViaIPv6))
+			eventually30s(nsX.podC).Should(Reach(nsX.podB, ViaIPv6))
+		})
+	})
+
 })
 
 func cleanMultiNetworkPoliciesFromNamespace(namespace string) {

@@ -17,7 +17,7 @@ $ ./setup_cluster.sh
 ```sh
 ./bin/kind get kubeconfig > /tmp/kubeconfig
 export KUBECONFIG=/tmp/kubeconfig
-go test -tags=e2e -v ./test
+go test -v ./test -e2e
 ```
 
 ## How to teardown cluster

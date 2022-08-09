@@ -198,8 +198,8 @@ Client iptables:
 		m.destinationPod.Namespace, m.destinationPod.Name, m.destinationAddress,
 		sourcePod.Namespace, sourcePod.Name,
 		m.protocol, m.destinationPort,
-		getIPTables(m.destinationPod),
-		getIPTables(sourcePod),
+		getIPTables(m.destinationPod, m.ipFamily),
+		getIPTables(sourcePod, m.ipFamily),
 	)
 }
 
@@ -219,8 +219,8 @@ Client iptables:
 		m.destinationPod.Namespace, m.destinationPod.Name, m.destinationAddress,
 		sourcePod.Namespace, sourcePod.Name,
 		m.protocol, m.destinationPort,
-		getIPTables(m.destinationPod),
-		getIPTables(sourcePod),
+		getIPTables(m.destinationPod, m.ipFamily),
+		getIPTables(sourcePod, m.ipFamily),
 	)
 }
 
@@ -266,7 +266,7 @@ func canSendTraffic(sourcePod, destinationPod *corev1.Pod, destinationPort strin
 		}
 
 		return false, fmt.Errorf("can't connect pods [%s] -> [%s]: %w\nServer iptables\n%s\n---\nClient iptables\n%s",
-			sourcePod.Name, destinationPod.Name, err, getIPTables(destinationPod), getIPTables(sourcePod))
+			sourcePod.Name, destinationPod.Name, err, getIPTables(destinationPod, ipFamily), getIPTables(sourcePod, ipFamily))
 	}
 
 	destinationContainerName := fmt.Sprintf("netcat-%s-server-%s", strings.ToLower(string(protocol)), destinationPort)
@@ -304,13 +304,18 @@ func doesErrorMeanNoConnectivity(commandOutput string, protocol corev1.Protocol)
 
 	return false
 }
-func getIPTables(pod *corev1.Pod) string {
+func getIPTables(pod *corev1.Pod, ipFamily corev1.IPFamily) string {
 	containerName, err := findContainerNameByImage(pod, debugIPTablesImage)
 	if err != nil {
 		return " can't get iptables information: " + err.Error()
 	}
 
-	output, err := execCommandInPod(*pod, containerName, []string{"iptables", "-L", "-v", "-n"})
+	iptablesCmd := "iptables"
+	if ipFamily == corev1.IPv6Protocol {
+		iptablesCmd = "ip6tables"
+	}
+
+	output, err := execCommandInPod(*pod, containerName, []string{iptablesCmd, "-L", "-v", "-n"})
 	if err != nil {
 		return "<err: " + err.Error() + ">"
 	}
