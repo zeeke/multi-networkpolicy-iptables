@@ -169,6 +169,11 @@ func (ipt *iptableBuffer) renderIngress(s *Server, podInfo *controllers.PodInfo,
 
 	ingresses := policy.Spec.Ingress
 	if idx == 0 {
+		// Allow incoming ICMPv6 traffic to let Neighbor Discovery Protocol work
+		if ipt.isIPv6 {
+			writeLine(ipt.policyIndex, "-A", ingressChain, "-p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT")
+			writeLine(ipt.policyIndex, "-A", ingressChain, "-p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT")
+		}
 		writeLine(ipt.policyIndex, "-A", ingressChain, "-m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT")
 	}
 	for _, podIntf := range podInfo.Interfaces {
@@ -354,6 +359,12 @@ func (ipt *iptableBuffer) renderEgress(s *Server, podInfo *controllers.PodInfo, 
 
 	egresses := policy.Spec.Egress
 	if idx == 0 {
+		// Allow outgoing ICMPv6 traffic to let Neighbor Discovery Protocol work
+		if ipt.isIPv6 {
+			writeLine(ipt.policyIndex, "-A", egressChain, "-p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT")
+			writeLine(ipt.policyIndex, "-A", egressChain, "-p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT")
+		}
+
 		writeLine(ipt.policyIndex, "-A", egressChain, "-m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT")
 	}
 	for _, podIntf := range podInfo.Interfaces {

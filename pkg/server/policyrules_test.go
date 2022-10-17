@@ -86,7 +86,7 @@ func NewFakeServer(hostname string) *Server {
 		ConfigSyncPeriod:    15 * time.Minute,
 		NodeRef:             nodeRef,
 		ip4Tables:           fakeiptables.NewFake(),
-		ip6Tables:           fakeiptables.NewIpv6Fake(),
+		ip6Tables:           fakeiptables.NewIPv6Fake(),
 
 		hostPrefix:    hostPrefix,
 		policyChanges: policyChanges,
@@ -915,7 +915,7 @@ COMMIT
 				})
 			AddPod(s, pod2)
 
-			ipt := fakeiptables.NewIpv6Fake()
+			ipt := fakeiptables.NewIPv6Fake()
 			buf := newIptableBuffer()
 			buf.Init(ipt)
 
@@ -933,12 +933,16 @@ COMMIT
 :MULTI-0-EGRESS - [0:0]
 :MULTI-0-EGRESS-0-PORTS - [0:0]
 :MULTI-0-EGRESS-0-TO - [0:0]
+-A MULTI-INGRESS -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT
+-A MULTI-INGRESS -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
 -A MULTI-INGRESS -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 -A MULTI-INGRESS -m comment --comment "policy:ingressPolicies1 net-attach-def:testns1/net-attach1" -i net1 -j MULTI-0-INGRESS
 -A MULTI-INGRESS -m mark --mark 0x30000/0x30000 -j RETURN
 -A MULTI-0-INGRESS -j MARK --set-xmark 0x0/0x30000
 -A MULTI-0-INGRESS -j MULTI-0-INGRESS-0-PORTS
 -A MULTI-0-INGRESS -j MULTI-0-INGRESS-0-FROM
+-A MULTI-EGRESS -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT
+-A MULTI-EGRESS -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
 -A MULTI-EGRESS -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 -A MULTI-EGRESS -m comment --comment "policy:ingressPolicies1 net-attach-def:testns1/net-attach1" -o net1 -j MULTI-0-EGRESS
 -A MULTI-EGRESS -m mark --mark 0x30000/0x30000 -j RETURN
@@ -1013,7 +1017,7 @@ COMMIT
 				})
 			AddPod(s, pod2)
 
-			ipt := fakeiptables.NewIpv6Fake()
+			ipt := fakeiptables.NewIPv6Fake()
 			buf := newIptableBuffer()
 			buf.Init(ipt)
 
@@ -1031,12 +1035,16 @@ COMMIT
 :MULTI-0-EGRESS - [0:0]
 :MULTI-0-EGRESS-0-PORTS - [0:0]
 :MULTI-0-EGRESS-0-TO - [0:0]
+-A MULTI-INGRESS -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT
+-A MULTI-INGRESS -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
 -A MULTI-INGRESS -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 -A MULTI-INGRESS -m comment --comment "policy:ingressPolicies1 net-attach-def:testns1/net-attach1" -i net1 -j MULTI-0-INGRESS
 -A MULTI-INGRESS -m mark --mark 0x30000/0x30000 -j RETURN
 -A MULTI-0-INGRESS -j MARK --set-xmark 0x0/0x30000
 -A MULTI-0-INGRESS -j MULTI-0-INGRESS-0-PORTS
 -A MULTI-0-INGRESS -j MULTI-0-INGRESS-0-FROM
+-A MULTI-EGRESS -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT
+-A MULTI-EGRESS -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
 -A MULTI-EGRESS -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 -A MULTI-EGRESS -m comment --comment "policy:ingressPolicies1 net-attach-def:testns1/net-attach1" -o net1 -j MULTI-0-EGRESS
 -A MULTI-EGRESS -m mark --mark 0x30000/0x30000 -j RETURN
@@ -1051,7 +1059,7 @@ COMMIT
 -A MULTI-0-EGRESS-0-TO -o net1 -d 2001:db8:a::11 -j MARK --set-xmark 0x20000/0x20000
 COMMIT
 `
-			Expect(buf.filterRules.String()).To(Equal(expectedRules))
+			Expect(buf.filterRules.String()).To(Equal(expectedRules), buf.filterRules.String())
 		})
 	})
 })
