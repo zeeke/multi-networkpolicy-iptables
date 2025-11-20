@@ -1,0 +1,112 @@
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  namespace: default
+  name: macvlan1-static
+spec: 
+  config: '{
+            "cniVersion": "0.3.1",
+            "name": "macvlan1-static",
+            "plugins": [
+                {
+                    "type": "macvlan",
+                    "mode": "bridge",
+                    "ipam":{
+                      "type":"static"
+                    }
+                }]
+        }'
+---
+# namespace for MultiNetworkPolicy 
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: test-ipv6-long-cidr
+---
+# Pods
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-server
+  namespace: test-ipv6-long-cidr
+  annotations:
+    k8s.v1.cni.cncf.io/networks: '[{
+      "name": "macvlan1-static",
+      "namespace": "default",
+      "ips": ["2001::8/64"]
+      }]'
+  labels:
+    app: test-ipv6-long-cidr
+    name: pod-server
+spec:
+  containers:
+  - name: macvlan-worker1
+    image: ghcr.io/k8snetworkplumbingwg/multi-networkpolicy-iptables:e2e-test
+    command: ["nc", "-klp", "5555"]
+    securityContext:
+      privileged: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-client-a
+  namespace: test-ipv6-long-cidr
+  annotations:
+    k8s.v1.cni.cncf.io/networks: '[{
+      "name": "macvlan1-static",
+      "namespace": "default",
+      "ips": ["2001::9/64"]
+      }]'
+  labels:
+    app: test-ipv6-long-cidr
+    name: pod-client-a
+spec:
+  containers:
+  - name: macvlan-worker1
+    image: ghcr.io/k8snetworkplumbingwg/multi-networkpolicy-iptables:e2e-test
+    command: ["nc", "-klp", "5555"]
+    securityContext:
+      privileged: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-client-b
+  namespace: test-ipv6-long-cidr
+  annotations:
+    k8s.v1.cni.cncf.io/networks: '[{
+      "name": "macvlan1-static",
+      "namespace": "default",
+      "ips": ["2001::10/64"]
+      }]'
+  labels:
+    app: test-ipv6-long-cidr
+    name: pod-client-b
+spec:
+  containers:
+  - name: macvlan-worker1
+    image: ghcr.io/k8snetworkplumbingwg/multi-networkpolicy-iptables:e2e-test
+    command: ["nc", "-klp", "5555"]
+    securityContext:
+      privileged: true
+---
+# MultiNetworkPolicies
+# this policy accepts ingress trafic from pod-client-a to pod-server
+apiVersion: k8s.cni.cncf.io/v1beta1
+kind: MultiNetworkPolicy
+metadata:
+  name: test-multinetwork-policy-ipv6-long-cidr
+  namespace: test-ipv6-long-cidr
+  annotations:
+    k8s.v1.cni.cncf.io/policy-for: default/macvlan1-static
+spec:
+  podSelector:
+    matchLabels:
+      name: pod-server
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 2001::9/128
